@@ -63,6 +63,7 @@ class Shape {
                             bool testAlphaTexture = true) const {
         return Intersect(ray, nullptr, nullptr, testAlphaTexture);
     }
+    virtual Float minDistanceFromPoint(const Point3d &p) const { throw "not implemented"; };
     virtual Float Area() const = 0;
     // Sample a point on the surface of the shape and return the PDF with
     // respect to area on the surface.

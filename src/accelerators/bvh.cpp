@@ -38,6 +38,7 @@
 #include "stats.h"
 #include "parallel.h"
 #include <algorithm>
+#include <stack>
 
 namespace pbrt {
 
@@ -736,6 +737,44 @@ bool BVHAccel::IntersectP(const Ray &ray) const {
     }
     return false;
 }
+
+Float BVHAccel::minDistanceFromPoint(Point3d &p) const {
+    // Return incorrect result sometimes, use pbrtboundary.cpp
+    CHECK_NOTNULL(nodes);
+    int toVisitOffset = 0, currentNodeIndex = 0;
+    int nodesToVisit[64];
+    std::vector<int> withinDistance;
+    while (true) {
+        CHECK_LE(toVisitOffset, 64);
+        const LinearBVHNode *node = &nodes[currentNodeIndex];
+        if (node->bounds.minDistanceFromPoint(p) <= 0.5) {
+            if (node->nPrimitives > 0) {
+                withinDistance.push_back(currentNodeIndex);
+                if (toVisitOffset == 0) break;
+                currentNodeIndex = nodesToVisit[--toVisitOffset];
+            }
+            else {
+                // Put both BVH node on _nodesToVisit_ stack, advance to node
+                nodesToVisit[toVisitOffset++] = node->secondChildOffset;
+                currentNodeIndex = currentNodeIndex + 1;
+            }
+        }
+        else {
+            if (toVisitOffset == 0) break;
+            currentNodeIndex = nodesToVisit[--toVisitOffset];
+        }
+    }
+    CHECK_NE(withinDistance.size(), 0);
+    Float minDist = 10000;
+    for (int i : withinDistance) {
+        const LinearBVHNode *node = &nodes[i];
+        for (int offset = 0; offset < node->nPrimitives; offset++) {
+            minDist = std::min(minDist, primitives[node->primitivesOffset+offset]->minDistanceFromPoint(p));
+        }
+    }
+    return minDist;
+}
+
 
 std::shared_ptr<BVHAccel> CreateBVHAccelerator(
     std::vector<std::shared_ptr<Primitive>> prims, const ParamSet &ps) {

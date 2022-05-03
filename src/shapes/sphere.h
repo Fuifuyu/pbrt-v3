@@ -67,7 +67,7 @@ class Sphere : public Shape {
                        Float *pdf) const;
     Float Pdf(const Interaction &ref, const Vector3f &wi) const;
     Float SolidAngle(const Point3f &p, int nSamples) const;
-
+    //Float minDistanceFromPoint(const Point3d &p) const override;
   private:
     // Sphere Private Data
     const Float radius;

@@ -84,6 +84,7 @@ class Triangle : public Shape {
     bool Intersect(const Ray &ray, Float *tHit, SurfaceInteraction *isect,
                    bool testAlphaTexture = true) const;
     bool IntersectP(const Ray &ray, bool testAlphaTexture = true) const;
+    virtual Float minDistanceFromPoint(const Point3d &p) const override;
     Float Area() const;
 
     using Shape::Sample;  // Bring in the other Sample() overload.
@@ -92,8 +93,9 @@ class Triangle : public Shape {
     // Returns the solid angle subtended by the triangle w.r.t. the given
     // reference point p.
     Float SolidAngle(const Point3f &p, int nSamples = 0) const;
-
-  private:
+    friend class RenderOptions;
+    std::shared_ptr<TriangleMesh> mesh;
+private:
     // Triangle Private Methods
     void GetUVs(Point2f uv[3]) const {
         if (mesh->uv) {
@@ -108,7 +110,6 @@ class Triangle : public Shape {
     }
 
     // Triangle Private Data
-    std::shared_ptr<TriangleMesh> mesh;
     const int *v;
     int faceIndex;
 };

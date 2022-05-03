@@ -65,6 +65,8 @@ class BVHAccel : public Aggregate {
     ~BVHAccel();
     bool Intersect(const Ray &ray, SurfaceInteraction *isect) const;
     bool IntersectP(const Ray &ray) const;
+    Float minDistanceFromPoint(Point3d &p) const override;
+    std::vector<std::shared_ptr<Primitive>> primitives;
 
   private:
     // BVHAccel Private Methods
@@ -90,7 +92,6 @@ class BVHAccel : public Aggregate {
     // BVHAccel Private Data
     const int maxPrimsInNode;
     const SplitMethod splitMethod;
-    std::vector<std::shared_ptr<Primitive>> primitives;
     LinearBVHNode *nodes = nullptr;
 };
 

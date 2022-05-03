@@ -571,6 +571,206 @@ bool Triangle::IntersectP(const Ray &ray, bool testAlphaTexture) const {
     return true;
 }
 
+#define withinOne(x) (0<=x&&1<=x)
+Float distance(const Point3f &p1, const Point3f &p2, const Point3f &x) {
+    const Float lineLength2 = (p2 - p1).LengthSquared();
+    if (lineLength2 == 0) return (p1 - x).Length();
+    Float t = std::max(0.0, std::min(1.0, Dot(x - p1,p2 - p1) / lineLength2));
+    Point3f projection = p1 + t * (p2 - p1);
+    return (x - projection).Length();
+}
+Float Triangle::minDistanceFromPoint(const Point3d &p) const {
+    // https://www.geometrictools.com/Documentation/DistancePoint3Triangle3.pdf
+    const Point3f &v0 = mesh->p[v[0]];
+    const Point3f &v1 = mesh->p[v[1]];
+    const Point3f &v2 = mesh->p[v[2]];
+
+    const Vector3f D = v0 - p;
+    const Vector3f e0 = Vector3f(v1 - v0);
+    const Vector3f e1 = Vector3f(v2 - v0);
+
+    const Float a = Dot(e0, e0);
+    const Float b = Dot(e0, e1);
+    const Float c = Dot(e1, e1);
+    const Float d = Dot(D, e0);
+    const Float e = Dot(D, e1);
+    const Float f = Dot(D, D);
+
+    Float s = b * e - c * d;
+    Float t = b * d - a * e;
+    const Float det = std::abs(a * c - b * b);
+
+    Float d2 = -1;
+
+    if (s + t <= det) {
+        if (s < 0) {
+            if (t < 0) {  // region 4
+                if (d < 0) {
+                    t = 0;
+                    if (-d >= a) { // V1
+                        s = 1;
+                        d2 = a + (2) * d + f;
+                    }
+                    else{ // E01
+                        s = -d / a;
+                        d2 = d * s + f;
+                    }
+                }
+                else {
+                    s = 0;
+                    if (e >= 0) { // V0
+                        t = 0;
+                        d2 = f;
+                    }
+                    else if (-e >= c) { // V2
+                        t = 1;
+                        d2 = c + (2) * e + f;
+                    }
+                    else { // E02
+                        t = -e / c;
+                        d2 = e * t + f;
+                    }
+                }
+            }
+            else {  // region 3
+                s = 0;
+                if (e >= 0) { // V0
+                    t = 0;
+                    d2 = f;
+                }
+                else if (-e >= c) { // V2
+                    t = 1;
+                    d2 = c + (2) * e + f;
+                }
+                else { // E02
+                    t = -e / c;
+                    d2 = e * t + f;
+                }
+            }
+        }
+        else if (t < 0) { // region 5
+            t = 0;
+            if (d >= 0) { // V0
+                s = 0;
+                d2 = f;
+            }
+            else if (-d >= a) { // V1
+                s = 1;
+                d2 = a + (2) * d + f;
+            }
+            else { // E01
+                s = -d / a;
+                d2 = d * s + f;
+            }
+        }
+        else {  // region 0 
+            // minimum at interior point
+            double invDet = (1) / det;
+            s *= invDet; t *= invDet;
+            d2 = s * (a * s + b * t + (2) * d) +
+                t * (b * s + c * t + (2) * e) + f;
+        }
+    }
+    else {
+        double tmp0, tmp1, numer, denom;
+        if (s < 0) {  // region 2
+            tmp0 = b + d;
+            tmp1 = c + e;
+            if (tmp1 > tmp0) {
+                numer = tmp1 - tmp0;
+                denom = a - (2) * b + c;
+                if (numer >= denom) { // V1
+                    s = 1;
+                    t = 0;
+                    d2 = a + (2) * d + f;
+                }
+                else { // E12
+                    s = numer / denom;
+                    t = 1 - s;
+                    d2 = s * (a * s + b * t + (2) * d) +
+                        t * (b * s + c * t + (2) * e) + f;
+                }
+            }
+            else {
+                s = 0;
+                if (tmp1 <= 0) { // V2
+                    t = 1;
+                    d2 = c + (2) * e + f;
+                }
+                else if (e >= 0) { // V0
+                    t = 0;
+                    d2 = f;
+                }
+                else { // E02
+                    t = -e / c;
+                    d2 = e * t + f;
+                }
+            }
+        }
+        else if (t < 0) {  // region 6
+            tmp0 = b + e;
+            tmp1 = a + d;
+            if (tmp1 > tmp0) {
+                numer = tmp1 - tmp0;
+                denom = a - (2) * b + c;
+                if (numer >= denom) { // V2
+                    t = 1;
+                    s = 0;
+                    d2 = c + (2) * e + f;
+                }
+                else { // E12
+                    t = numer / denom;
+                    s = 1 - t;
+                    d2 = s * (a * s + b * t + (2) * d) +
+                        t * (b * s + c * t + (2) * e) + f;
+                }
+            }
+            else {
+                t = 0;
+                if (tmp1 <= 0) { // V1
+                    s = 1;
+                    d2 = a + (2) * d + f;
+                }
+                else if (d >= 0) { // V0
+                    s = 0;
+                    d2 = f;
+                }
+                else { // E01
+                    s = -d / a;
+                    d2 = d * s + f;
+                }
+            }
+        }
+        else {  // region 1
+            numer = c + e - b - d;
+            if (numer <= 0) { // V2
+                s = 0;
+                t = 1;
+                d2 = c + (2) * e + f;
+            }
+            else {
+                denom = a - (2) * b + c;
+                if (numer >= denom) { // V1
+                    s = 1;
+                    t = 0;
+                    d2 = a + (2) * d + f;
+                }
+                else { // E12
+                    s = numer / denom;
+                    t = 1 - s;
+                    d2 = s * (a * s + b * t + (2) * d) +
+                        t * (b * s + c * t + (2) * e) + f;
+                }
+            }
+        }
+    }
+    if (d2 < 0) { // Account for numerical round-off error.
+        d2 = 0;
+    }
+    return std::sqrt(d2);
+}
+
+
 Float Triangle::Area() const {
     // Get triangle vertices in _p0_, _p1_, and _p2_
     const Point3f &p0 = mesh->p[v[0]];

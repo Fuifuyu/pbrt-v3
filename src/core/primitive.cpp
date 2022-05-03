@@ -129,6 +129,10 @@ bool GeometricPrimitive::Intersect(const Ray &r,
     return true;
 }
 
+Float GeometricPrimitive::minDistanceFromPoint(Point3d &p) const {
+    return shape->minDistanceFromPoint(p);
+}
+
 const AreaLight *GeometricPrimitive::GetAreaLight() const {
     return areaLight.get();
 }

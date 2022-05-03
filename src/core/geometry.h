@@ -550,7 +550,9 @@ inline std::ostream &operator<<(std::ostream &os, const Point3<Float> &v) {
 
 typedef Point2<Float> Point2f;
 typedef Point2<int> Point2i;
+typedef Point2<double> Point2d;
 typedef Point3<Float> Point3f;
+typedef Point3<double> Point3d;
 typedef Point3<int> Point3i;
 
 // Normal Declarations
@@ -817,6 +819,7 @@ class Bounds3 {
                     Float *hitt1 = nullptr) const;
     inline bool IntersectP(const Ray &ray, const Vector3f &invDir,
                            const int dirIsNeg[3]) const;
+    double minDistanceFromPoint(Point3d &p) const;
     friend std::ostream &operator<<(std::ostream &os, const Bounds3<T> &b) {
         os << "[ " << b.pMin << " - " << b.pMax << " ]";
         return os;
@@ -1435,6 +1438,22 @@ inline bool Bounds3<T>::IntersectP(const Ray &ray, const Vector3f &invDir,
     if (tzMin > tMin) tMin = tzMin;
     if (tzMax < tMax) tMax = tzMax;
     return (tMin < ray.tMax) && (tMax > 0);
+}
+
+template <typename T>
+double Bounds3<T>::minDistanceFromPoint(Point3d &p) const {
+    if (Inside(p, *this)) {
+        const Float distx = std::min(abs(pMin.x - p.x), abs(pMax.x - p.x));
+        const Float disty = std::min(abs(pMin.y - p.y), abs(pMax.y - p.y));
+        const Float distz = std::min(abs(pMin.z - p.z), abs(pMax.z - p.z));
+        return std::min(distx, std::min(disty, distz));
+    }
+    // https://stackoverflow.com/questions/5254838/calculating-distance-between-a-point-and-a-rectangular-box-nearest-point
+    const Float distx = std::max(pMin.x - p.x, std::max(0.0, p.x - pMax.x));
+    const Float disty = std::max(pMin.y - p.y, std::max(0.0, p.z - pMax.y));
+    const Float distz = std::max(pMin.z - p.z, std::max(0.0, p.z - pMax.z));
+
+    return std::sqrt(distx * distx + disty * disty + distz * distz);
 }
 
 inline Point3f OffsetRayOrigin(const Point3f &p, const Vector3f &pError,

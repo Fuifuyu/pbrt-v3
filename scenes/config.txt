@@ -1,0 +1,7 @@
+C:/Personal/Project/experiment/pbrt-v3/scenes/ normal front square_bound
+64 64 64
+5000
+uniform
+wos
+0.000001
+5 1

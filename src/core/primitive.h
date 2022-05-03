@@ -57,6 +57,7 @@ class Primitive {
     virtual bool IntersectP(const Ray &r) const = 0;
     virtual const AreaLight *GetAreaLight() const = 0;
     virtual const Material *GetMaterial() const = 0;
+    virtual Float minDistanceFromPoint(Point3d &p) const { throw "not implemented"; };
     virtual void ComputeScatteringFunctions(SurfaceInteraction *isect,
                                             MemoryArena &arena,
                                             TransportMode mode,
@@ -70,6 +71,8 @@ class GeometricPrimitive : public Primitive {
     virtual Bounds3f WorldBound() const;
     virtual bool Intersect(const Ray &r, SurfaceInteraction *isect) const;
     virtual bool IntersectP(const Ray &r) const;
+    virtual Float minDistanceFromPoint(Point3d &p) const override;
+
     GeometricPrimitive(const std::shared_ptr<Shape> &shape,
                        const std::shared_ptr<Material> &material,
                        const std::shared_ptr<AreaLight> &areaLight,
@@ -79,10 +82,10 @@ class GeometricPrimitive : public Primitive {
     void ComputeScatteringFunctions(SurfaceInteraction *isect,
                                     MemoryArena &arena, TransportMode mode,
                                     bool allowMultipleLobes) const;
-
-  private:
-    // GeometricPrimitive Private Data
+    friend class RenderOptions;
     std::shared_ptr<Shape> shape;
+private:
+    // GeometricPrimitive Private Data
     std::shared_ptr<Material> material;
     std::shared_ptr<AreaLight> areaLight;
     MediumInterface mediumInterface;

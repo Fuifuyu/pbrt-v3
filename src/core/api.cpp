@@ -60,6 +60,7 @@
 #include "integrators/sppm.h"
 #include "integrators/volpath.h"
 #include "integrators/whitted.h"
+#include "integrators/pde.h"
 #include "lights/diffuse.h"
 #include "lights/distant.h"
 #include "lights/goniometric.h"
@@ -157,7 +158,7 @@ struct TransformSet {
 
 struct RenderOptions {
     // RenderOptions Public Methods
-    Integrator *MakeIntegrator() const;
+    Integrator *MakeIntegrator();
     Scene *MakeScene();
     Camera *MakeCamera() const;
 
@@ -1650,7 +1651,7 @@ void pbrtWorldEnd() {
 
 Scene *RenderOptions::MakeScene() {
     std::shared_ptr<Primitive> accelerator =
-        MakeAccelerator(AcceleratorName, std::move(primitives), AcceleratorParams);
+        MakeAccelerator(AcceleratorName, primitives, AcceleratorParams);
     if (!accelerator) accelerator = std::make_shared<BVHAccel>(primitives);
     Scene *scene = new Scene(accelerator, lights);
     // Erase primitives and lights from _RenderOptions_
@@ -1659,7 +1660,7 @@ Scene *RenderOptions::MakeScene() {
     return scene;
 }
 
-Integrator *RenderOptions::MakeIntegrator() const {
+Integrator *RenderOptions::MakeIntegrator() {
     std::shared_ptr<const Camera> camera(MakeCamera());
     if (!camera) {
         Error("Unable to create camera");
@@ -1691,6 +1692,28 @@ Integrator *RenderOptions::MakeIntegrator() const {
         integrator = CreateAOIntegrator(IntegratorParams, sampler, camera);
     } else if (IntegratorName == "sppm") {
         integrator = CreateSPPMIntegrator(IntegratorParams, camera);
+    } else if (IntegratorName == "pde") {
+        GeometricPrimitive *boundary = dynamic_cast<GeometricPrimitive *>(primitives[0].get());
+        if (boundary) {
+            Triangle *triangle = dynamic_cast<Triangle *>(boundary->shape.get());
+            if (triangle) {
+                std::vector<std::shared_ptr<Primitive>> boundary(
+                    primitives.begin(),
+                    primitives.begin() + triangle->mesh->nTriangles);
+                integrator = extension::CreatePDEIntegrator(
+                    IntegratorParams,sampler, camera,
+                    MakeAccelerator(AcceleratorName, boundary, AcceleratorParams));
+                primitives.erase(primitives.begin(), primitives.begin() + triangle->mesh->nTriangles);
+            }
+            else {
+                integrator = extension::CreatePDEIntegrator(IntegratorParams, sampler, camera, primitives[0]);
+                primitives.erase(primitives.begin());
+            }
+        }
+        else {
+            integrator = extension::CreatePDEIntegrator(IntegratorParams, sampler, camera, primitives[0]);
+            primitives.erase(primitives.begin());
+        }
     } else {
         Error("Integrator \"%s\" unknown.", IntegratorName.c_str());
         return nullptr;

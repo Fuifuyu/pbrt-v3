@@ -461,6 +461,11 @@ FILE ( GLOB PBRT_SOURCE
   src/shapes/*
   src/textures/*
   src/media/*
+  src/extension/*
+  src/extension/boundary/*
+  src/extension/methods/*
+  src/extension/core/*
+  src/extension/pde/*
   )
 
 INCLUDE_DIRECTORIES ( src )
@@ -479,6 +484,7 @@ SOURCE_GROUP (samplers REGULAR_EXPRESSION src/samplers/.*)
 SOURCE_GROUP (shapes REGULAR_EXPRESSION src/shapes/.*)
 SOURCE_GROUP (textures REGULAR_EXPRESSION src/textures/.*)
 SOURCE_GROUP (media REGULAR_EXPRESSION src/media/.*)
+SOURCE_GROUP (extension REGULAR_EXPRESSION src/extension/.*)
 
 ###########################################################################
 # pbrt libraries and executables

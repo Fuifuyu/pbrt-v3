@@ -1,0 +1,27 @@
+
+LookAt 3 0.5 3   0.5 0.5 0.5   0 1 0
+Camera "perspective" "float fov" [39]
+Film "image"  
+"integer xresolution" [700] "integer yresolution" [700]
+    "string filename" "bunny_test.exr"
+
+Sampler "halton" "integer pixelsamples" [128]
+
+Integrator "pde"
+
+WorldBegin
+
+LightSource "infinite"
+
+AttributeBegin
+  # Material "matte" "rgb Kd" [0 0.5 0]
+  Include "geometry/bunny.pbrt"
+AttributeEnd
+
+AttributeBegin
+  # Scale 0.8 0.8 0.8
+  # Translate 0.1 0.1 0.1
+  Include "geometry/partial_bunny.pbrt"
+AttributeEnd
+
+WorldEnd

@@ -332,6 +332,7 @@ void SamplerIntegrator::Render(const Scene &scene) {
         }, nTiles);
         reporter.Done();
     }
+    Postprocess(scene, *sampler);
     LOG(INFO) << "Rendering finished";
 
     // Save final image after rendering
